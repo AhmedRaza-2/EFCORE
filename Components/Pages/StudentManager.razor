@@ -1,0 +1,101 @@
+﻿@page "/students"
+@inject IStudentService StudentService
+@using EFCORE.Models
+
+<h3 class="mt-4 mb-3 text-primary">Student Manager</h3>
+
+<div class="card p-4 mb-4 shadow-sm">
+    <EditForm Model="@currentStudent" OnValidSubmit="SaveStudentAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <InputText @bind-Value="currentStudent.FullName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Age</label>
+            <InputNumber @bind-Value="currentStudent.StudentAge" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText @bind-Value="currentStudent.EmailAddress" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            @(currentStudent.Id == 0 ? "➕ Add" : "✏️ Update") Student
+        </button>
+    </EditForm>
+</div>
+
+@if (studentList is not null && studentList.Count > 0)
+{
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in studentList)
+            {
+                <tr>
+                    <td>@s.FullName</td>
+                    <td>@s.StudentAge</td>
+                    <td>@s.EmailAddress</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" @onclick="() => LoadForEdit(s)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveStudentAsync(s.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">No students found. Please add some.</div>
+}
+
+@code {
+    private Student currentStudent = new();
+    private List<Student> studentList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        studentList = await StudentService.GetAllStudentsAsync();
+    }
+
+    private async Task SaveStudentAsync()
+    {
+        if (currentStudent.Id == 0)
+            await StudentService.CreateStudentAsync(currentStudent);
+        else
+            await StudentService.ModifyStudentAsync(currentStudent);
+
+        currentStudent = new();
+        studentList = await StudentService.GetAllStudentsAsync();
+    }
+
+    private void LoadForEdit(Student s)
+    {
+        currentStudent = new Student
+            {
+                Id = s.Id,
+                FullName = s.FullName,
+                StudentAge = s.StudentAge,
+                EmailAddress = s.EmailAddress
+            };
+    }
+
+    private async Task RemoveStudentAsync(int id)
+    {
+        await StudentService.RemoveStudentAsync(id);
+        studentList = await StudentService.GetAllStudentsAsync();
+    }
+}
